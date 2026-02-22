@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WarehouseManager.Models\WarehouseManager.Models.csproj" />
+    <ProjectReference Include="..\WarehouseManager.ViewModels\WarehouseManager.ViewModels.csproj" />
+    <ProjectReference Include="..\WarehouseManager.Services\WarehouseManager.Services.csproj" />
+  </ItemGroup>
+</Project>

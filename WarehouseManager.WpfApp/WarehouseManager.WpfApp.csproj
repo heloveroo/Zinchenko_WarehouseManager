@@ -1,23 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <RootNamespace>WarehouseManager.WpfApp</RootNamespace>
-    <AssemblyName>WarehouseManager.WpfApp</AssemblyName>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <!-- IoC-контейнер від Microsoft -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\WarehouseManager.Models\WarehouseManager.Models.csproj" />
-    <ProjectReference Include="..\WarehouseManager.ViewModels\WarehouseManager.ViewModels.csproj" />
-    <ProjectReference Include="..\WarehouseManager.Services\WarehouseManager.Services.csproj" />
-  </ItemGroup>
-
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<RootNamespace>WarehouseManager.WpfApp</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\WarehouseManager.Repositories\WarehouseManager.Repositories.csproj" />
+		<ProjectReference Include="..\WarehouseManager.Services\WarehouseManager.Services.csproj" />
+		<ProjectReference Include="..\WarehouseManager.ViewModels\WarehouseManager.ViewModels.csproj" />
+	</ItemGroup>
 </Project>

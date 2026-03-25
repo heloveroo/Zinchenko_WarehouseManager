@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<UseWPF>true</UseWPF>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\WarehouseManager.Models\WarehouseManager.Models.csproj" />
-		<ProjectReference Include="..\WarehouseManager.Services\WarehouseManager.Services.csproj" />
 	</ItemGroup>
 </Project>

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using WarehouseManager.Models;
 using WarehouseManager.Models.Enums;
 
-namespace WarehouseManager.Services.Storage
+namespace WarehouseManager.Repositories.Storage
 {
     /// <summary>
     /// Штучне сховище даних — замінює реальну базу даних на початковому етапі.

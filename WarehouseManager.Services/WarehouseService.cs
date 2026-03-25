@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using WarehouseManager.Models;
-using WarehouseManager.Services.Storage;
-using WarehouseManager.ViewModels;
+using System.Linq;
+using WarehouseManager.Repositories.Interfaces;
+using WarehouseManager.Services.DTOs;
+using WarehouseManager.Services.Interfaces;
 
 namespace WarehouseManager.Services
 {
@@ -17,43 +19,56 @@ namespace WarehouseManager.Services
     /// </summary>
     public class WarehouseService : IWarehouseService
     {
-        /// <summary>
-        /// Повертає список усіх складів як WarehouseViewModel.
-        /// Товари НЕ завантажуються одразу — Products залишається null.
-        /// </summary>
-        public List<WarehouseViewModel> GetAllWarehouses()
+        private readonly IWarehouseRepository _warehouseRepo;
+        private readonly IProductRepository _productRepo;
+
+        public WarehouseService(
+            IWarehouseRepository warehouseRepo,
+            IProductRepository productRepo)
         {
-            List<WarehouseViewModel> result = new List<WarehouseViewModel>();
-
-            foreach (WarehouseModel model in FakeStorage.Warehouses)
-            {
-                result.Add(new WarehouseViewModel(model));
-            }
-
-            return result;
+            _warehouseRepo = warehouseRepo;
+            _productRepo = productRepo;
         }
 
-        /// <summary>
-        /// Завантажує і повертає список товарів для вказаного складу.
-        /// Також заповнює властивість Products у переданому WarehouseViewModel.
-        /// </summary>
-        /// <param name="warehouse">ViewModel складу, для якого потрібно завантажити товари.</param>
-        public List<ProductViewModel> LoadProductsForWarehouse(WarehouseViewModel warehouse)
+        public IReadOnlyList<WarehouseListDto> GetAllWarehouses()
         {
-            List<ProductViewModel> products = new List<ProductViewModel>();
-
-            foreach (ProductModel model in FakeStorage.Products)
-            {
-                if (model.WarehouseId == warehouse.Id)
+            return _warehouseRepo.GetAll()
+                .Select(w => new WarehouseListDto
                 {
-                    products.Add(new ProductViewModel(model));
-                }
-            }
+                    Id = w.Id,
+                    Name = w.Name,
+                    Location = w.Location.ToString(),
+                    ProductCount = _productRepo.GetByWarehouseId(w.Id).Count
+                })
+                .ToList();
+        }
 
-            // Зберігаємо в ViewModel, щоб не завантажувати повторно
-            warehouse.Products = products;
+        public WarehouseDetailDto? GetWarehouseDetail(int warehouseId)
+        {
+            WarehouseModel? warehouse = _warehouseRepo.GetById(warehouseId);
+            if (warehouse is null) return null;
 
-            return products;
+            List<ProductListDto> products = _productRepo
+                .GetByWarehouseId(warehouseId)
+                .Select(p => new ProductListDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Category = p.Category.ToString(),
+                    Quantity = p.Quantity,
+                    UnitPrice = p.UnitPrice,
+                    TotalPrice = p.Quantity * p.UnitPrice
+                })
+                .ToList();
+
+            return new WarehouseDetailDto
+            {
+                Id = warehouse.Id,
+                Name = warehouse.Name,
+                Location = warehouse.Location.ToString(),
+                TotalValue = products.Sum(p => p.TotalPrice),
+                Products = products
+            };
         }
     }
 }

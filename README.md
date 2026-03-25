@@ -1,8 +1,8 @@
-# Менеджер товарів — Лабораторна робота 1
+# Менеджер складів — Лабораторні роботи 1–2
 
 ## Опис застосунку
-Консольний застосунок для обліку складів і товарів.  
-Дозволяє переглядати список складів, вибирати конкретний склад і переглядати його товари з детальною інформацією.
+Система обліку складів і товарів.  
+Реалізована у двох варіантах: консольний застосунок (ЛР1) та WPF-застосунок із DI/IoC (ЛР2).
 
 ---
 
@@ -25,10 +25,19 @@ WarehouseManager.sln
 ├── WarehouseManager.Services        ← Бібліотека: сервіси і штучне сховище
 │   ├── Storage/
 │   │   └── FakeStorage.cs          ← штучне сховище (internal, недоступне ззовні)
-│   └── WarehouseService.cs         ← сервіс для роботи зі сховищем
+│   ├── IWarehouseService.cs        ← інтерфейс сервісу (для DIP та DI) [ЛР2]
+│   └── WarehouseService.cs         ← реалізація сервісу (implements IWarehouseService)
 │
-└── WarehouseManager.ConsoleApp      ← Консольний застосунок
-    └── Program.cs                  ← логіка навігації і виводу
+├── WarehouseManager.ConsoleApp      ← Консольний застосунок (ЛР1)
+│   └── Program.cs                  ← логіка навігації і виводу
+│
+└── WarehouseManager.WpfApp          ← WPF-застосунок (ЛР2)
+    ├── App.xaml / App.xaml.cs      ← IoC-контейнер, реєстрація сервісів
+    ├── MainWindow.xaml / .cs       ← єдине вікно з Frame для навігації
+    └── Pages/
+        ├── WarehouseListPage       ← Сторінка 1: список усіх складів
+        ├── WarehouseDetailPage     ← Сторінка 2: деталі складу + список товарів
+        └── ProductDetailPage       ← Сторінка 3: повна інформація про товар
 ```
 
 ---
@@ -45,11 +54,43 @@ WarehouseManager.sln
 
 ### Services
 - **FakeStorage** — `internal static` клас. Містить початкові дані: 3 склади і 12 товарів. Недоступний поза межами проєкту Services.
-- **WarehouseService** — єдина точка доступу до сховища. Повертає ViewModels. Реалізує lazy-завантаження товарів.
+- **IWarehouseService** — інтерфейс сервісу. Забезпечує Dependency Inversion Principle: UI-застосунок залежить від абстракції, а не від конкретної реалізації.
+- **WarehouseService** — реалізує `IWarehouseService`. Єдина точка доступу до сховища. Реалізує lazy-завантаження товарів.
 
 ---
 
-## Логіка консольного застосунку
+## Принципи DI та IoC (ЛР2)
+
+```
+App.xaml.cs — IoC-контейнер (Microsoft.Extensions.DependencyInjection)
+  ├── services.AddSingleton<IWarehouseService, WarehouseService>()
+  └── services.AddTransient<MainWindow>()
+         ↓
+MainWindow(IWarehouseService)          ← Constructor Injection
+  └── WarehouseListPage(IWarehouseService, Frame)
+            ↓
+      WarehouseDetailPage(IWarehouseService, Frame, WarehouseViewModel)
+            ↓
+        ProductDetailPage(Frame, ProductViewModel)
+```
+
+**Dependency Inversion Principle**: `MainWindow`, `WarehouseListPage` та `WarehouseDetailPage`
+залежать від `IWarehouseService` (абстракції), а не від `WarehouseService` (конкретної реалізації).
+Завдяки цьому можна замінити `FakeStorage` на реальну БД, не змінюючи жодного рядка у WpfApp.
+
+---
+
+## Логіка WPF-застосунку (ЛР2)
+
+1. При запуску `App.OnStartup` збирає IoC-контейнер і відкриває `MainWindow`.
+2. `MainWindow` містить єдиний `Frame` — навігація відбувається через зміну сторінок (без нових вікон).
+3. **Сторінка 1 (WarehouseListPage)**: завантажує список складів, відображає картки. Клік → перехід на Сторінку 2.
+4. **Сторінка 2 (WarehouseDetailPage)**: відображає деталі складу і список товарів (lazy loading). Клік на товар → Сторінка 3. Кнопка «Назад» → Сторінка 1.
+5. **Сторінка 3 (ProductDetailPage)**: відображає всі поля товару. Кнопка «Назад» → Сторінка 2.
+
+---
+
+## Логіка консольного застосунку (ЛР1)
 
 1. При запуску завантажується список складів (`GetAllWarehouses`), товари **не** завантажуються одразу.
 2. Виводиться список складів. Користувач вводить ID складу.
@@ -62,13 +103,18 @@ WarehouseManager.sln
 
 ## Початкові дані
 
-| Склад | Місто | Товарів |
-|---|---|---|
-| Центральний | Київ | 10 |
-| Західний | Львів | 2 |
-| Богуславський | Богуслав | 0 |
+| Склад         | Місто   | Товарів |
+|---------------|---------|---------|
+| Центральний   | Київ    | 10      |
+| Західний      | Львів   | 2       |
+| Богуславський | Богуслав| 0       |
 
 ---
 
 ## Запуск
-Відкрити `WarehouseManager.sln` у Visual Studio → встановити `WarehouseManager.ConsoleApp` як стартовий проєкт → запустити (F5).
+
+### WPF-застосунок (ЛР2)
+Відкрити `WarehouseManager.sln` → встановити `WarehouseManager.WpfApp` як стартовий проєкт → запустити (F5).
+
+### Консольний застосунок (ЛР1)
+Відкрити `WarehouseManager.sln` → встановити `WarehouseManager.ConsoleApp` як стартовий проєкт → запустити (F5).

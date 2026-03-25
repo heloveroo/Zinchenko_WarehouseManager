@@ -15,7 +15,7 @@ namespace WarehouseManager.Services
     ///
     /// Тільки цей клас має доступ до FakeStorage.
     /// </summary>
-    public class WarehouseService
+    public class WarehouseService : IWarehouseService
     {
         /// <summary>
         /// Повертає список усіх складів як WarehouseViewModel.

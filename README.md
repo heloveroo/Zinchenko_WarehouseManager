@@ -1,8 +1,7 @@
-# Менеджер складів — Лабораторні роботи 1–2
+# Менеджер складів — Лабораторні роботи 1–4
 
 ## Опис застосунку
-Система обліку складів і товарів.  
-Реалізована у двох варіантах: консольний застосунок (ЛР1) та WPF-застосунок із DI/IoC (ЛР2).
+Система обліку складів і товарів з повним CRUD, пошуком, сортуванням та збереженням даних у SQLite базі даних.
 
 ---
 
@@ -11,110 +10,117 @@
 ```
 WarehouseManager.sln
 │
-├── WarehouseManager.Models          ← Бібліотека: класи зберігання даних
+├── WarehouseManager.Models          ← Бібліотека: моделі даних (EF Core сутності)
 │   ├── Enums/
 │   │   ├── WarehouseLocation.cs     ← enum міст розташування складу
 │   │   └── ProductCategory.cs      ← enum категорій товарів
-│   ├── WarehouseModel.cs            ← модель складу (тільки "сирі" дані)
-│   └── ProductModel.cs             ← модель товару (тільки "сирі" дані)
+│   ├── WarehouseModel.cs            ← модель складу
+│   └── ProductModel.cs             ← модель товару
 │
-├── WarehouseManager.ViewModels      ← Бібліотека: класи відображення/редагування
-│   ├── WarehouseViewModel.cs        ← відображення складу + обчислювані поля + список товарів
-│   └── ProductViewModel.cs         ← відображення товару + обчислюване поле TotalPrice
+├── WarehouseManager.Repositories    ← Бібліотека: шар сховища (EF Core + SQLite)
+│   ├── Interfaces/
+│   │   ├── IWarehouseRepository.cs  ← інтерфейс репозиторію складів
+│   │   └── IProductRepository.cs   ← інтерфейс репозиторію товарів
+│   ├── Repositories/
+│   │   ├── WarehouseRepository.cs  ← реалізація репозиторію складів
+│   │   └── ProductRepository.cs   ← реалізація репозиторію товарів
+│   ├── AppDbContext.cs             ← EF Core DbContext
+│   └── DbInitializer.cs           ← заповнення БД початковими даними
 │
-├── WarehouseManager.Services        ← Бібліотека: сервіси і штучне сховище
-│   ├── Storage/
-│   │   └── FakeStorage.cs          ← штучне сховище (internal, недоступне ззовні)
-│   ├── IWarehouseService.cs        ← інтерфейс сервісу (для DIP та DI) [ЛР2]
-│   └── WarehouseService.cs         ← реалізація сервісу (implements IWarehouseService)
+├── WarehouseManager.Services        ← Бібліотека: шар сервісів і DTO
+│   ├── DTOs/
+│   │   ├── WarehouseListDto.cs     ← DTO для списку складів
+│   │   ├── WarehouseDetailDto.cs   ← DTO для деталей складу
+│   │   ├── ProductListDto.cs       ← DTO для списку товарів
+│   │   └── ProductDetailDto.cs    ← DTO для деталей товару
+│   ├── Interfaces/
+│   │   ├── IWarehouseService.cs   ← інтерфейс сервісу складів
+│   │   └── IProductService.cs     ← інтерфейс сервісу товарів
+│   ├── WarehouseService.cs        ← реалізація сервісу складів
+│   └── ProductService.cs          ← реалізація сервісу товарів
 │
-├── WarehouseManager.ConsoleApp      ← Консольний застосунок (ЛР1)
-│   └── Program.cs                  ← логіка навігації і виводу
-│
-└── WarehouseManager.WpfApp          ← WPF-застосунок (ЛР2)
-    ├── App.xaml / App.xaml.cs      ← IoC-контейнер, реєстрація сервісів
-    ├── MainWindow.xaml / .cs       ← єдине вікно з Frame для навігації
-    └── Pages/
-        ├── WarehouseListPage       ← Сторінка 1: список усіх складів
-        ├── WarehouseDetailPage     ← Сторінка 2: деталі складу + список товарів
-        └── ProductDetailPage       ← Сторінка 3: повна інформація про товар
+└── WarehouseManager.WpfApp          ← WPF-застосунок (UI шар)
+    ├── Converters/
+    │   └── Converters.cs           ← конвертери для локалізації enum
+    ├── Pages/
+    │   ├── WarehouseListPage       ← список складів + пошук + сортування
+    │   ├── WarehouseDetailPage     ← деталі складу + список товарів
+    │   └── ProductDetailPage       ← деталі товару
+    ├── Services/
+    │   └── NavigationService.cs   ← сервіс навігації між сторінками
+    ├── App.xaml / App.xaml.cs     ← IoC-контейнер, ініціалізація БД
+    └── MainWindow.xaml / .cs      ← єдине вікно з ContentControl
 ```
 
 ---
 
-## Логіка класів
+## Архітектура
 
-### Models (класи зберігання)
-- **WarehouseModel** — id (read-only), назва, місто. **Без** обчислюваних полів і колекцій.
-- **ProductModel** — id (read-only), warehouseId, назва, кількість, ціна, категорія, опис. **Без** обчислюваних полів.
+Застосунок побудований за трьохшаровою архітектурою:
 
-### ViewModels (класи відображення)
-- **WarehouseViewModel** — містить `TotalValue` (сума всіх товарів), список `Products` (null до завантаження), методи `PrintShort()` і `PrintDetails()`.
-- **ProductViewModel** — містить `TotalPrice` (ціна × кількість), методи `PrintShort()` і `PrintDetails()`.
+- **UI шар** (`WpfApp`) — взаємодіє тільки з шаром сервісів через інтерфейси
+- **Шар сервісів** (`Services`) — бізнес-логіка, перетворення моделей у DTO
+- **Шар сховища** (`Repositories`) — робота з БД через EF Core
 
-### Services
-- **FakeStorage** — `internal static` клас. Містить початкові дані: 3 склади і 12 товарів. Недоступний поза межами проєкту Services.
-- **IWarehouseService** — інтерфейс сервісу. Забезпечує Dependency Inversion Principle: UI-застосунок залежить від абстракції, а не від конкретної реалізації.
-- **WarehouseService** — реалізує `IWarehouseService`. Єдина точка доступу до сховища. Реалізує lazy-завантаження товарів.
+### MVVM
+- `BaseViewModel` — реалізує `INotifyPropertyChanged`
+- `RelayCommand` / `AsyncRelayCommand` — реалізація `ICommand`
+- `MainViewModel` — зберігає поточну сторінку (`CurrentViewModel`)
+- `WarehousesViewModel`, `WarehouseDetailViewModel`, `ProductDetailViewModel` — логіка кожної сторінки
 
----
-
-## Принципи DI та IoC (ЛР2)
-
+### DI / IoC
 ```
 App.xaml.cs — IoC-контейнер (Microsoft.Extensions.DependencyInjection)
-  ├── services.AddSingleton<IWarehouseService, WarehouseService>()
-  └── services.AddTransient<MainWindow>()
-         ↓
-MainWindow(IWarehouseService)          ← Constructor Injection
-  └── WarehouseListPage(IWarehouseService, Frame)
-            ↓
-      WarehouseDetailPage(IWarehouseService, Frame, WarehouseViewModel)
-            ↓
-        ProductDetailPage(Frame, ProductViewModel)
+  ├── AddDbContext<AppDbContext>         ← SQLite
+  ├── AddScoped<IWarehouseRepository>
+  ├── AddScoped<IProductRepository>
+  ├── AddScoped<IWarehouseService>
+  ├── AddScoped<IProductService>
+  ├── AddSingleton<INavigationService>
+  └── AddSingleton<MainWindow>
 ```
 
-**Dependency Inversion Principle**: `MainWindow`, `WarehouseListPage` та `WarehouseDetailPage`
-залежать від `IWarehouseService` (абстракції), а не від `WarehouseService` (конкретної реалізації).
-Завдяки цьому можна замінити `FakeStorage` на реальну БД, не змінюючи жодного рядка у WpfApp.
+---
+
+## Функціонал
+
+### Склади
+- Перегляд списку всіх складів
+- Пошук за назвою або містом
+- Сортування за назвою, містом, кількістю товарів
+- Додавання нового складу
+- Редагування назви та міста
+- Видалення складу (з каскадним видаленням товарів)
+
+### Товари
+- Перегляд списку товарів складу
+- Пошук за назвою або категорією
+- Сортування за назвою, категорією, кількістю, ціною, сумою
+- Додавання нового товару
+- Редагування всіх полів
+- Видалення товару
 
 ---
 
-## Логіка WPF-застосунку (ЛР2)
+## Сховище даних
 
-1. При запуску `App.OnStartup` збирає IoC-контейнер і відкриває `MainWindow`.
-2. `MainWindow` містить єдиний `Frame` — навігація відбувається через зміну сторінок (без нових вікон).
-3. **Сторінка 1 (WarehouseListPage)**: завантажує список складів, відображає картки. Клік → перехід на Сторінку 2.
-4. **Сторінка 2 (WarehouseDetailPage)**: відображає деталі складу і список товарів (lazy loading). Клік на товар → Сторінка 3. Кнопка «Назад» → Сторінка 1.
-5. **Сторінка 3 (ProductDetailPage)**: відображає всі поля товару. Кнопка «Назад» → Сторінка 2.
-
----
-
-## Логіка консольного застосунку (ЛР1)
-
-1. При запуску завантажується список складів (`GetAllWarehouses`), товари **не** завантажуються одразу.
-2. Виводиться список складів. Користувач вводить ID складу.
-3. Якщо товари ще не завантажені — відбувається завантаження (`LoadProductsForWarehouse`).
-4. Виводяться деталі складу і короткий список товарів.
-5. Користувач може ввести ID товару для перегляду повної інформації.
-6. Введення `0` повертає до списку складів, `exit` — завершує застосунок.
+- **SQLite** база даних через **Entity Framework Core**
+- Файл БД: `%LocalAppData%\WarehouseManager\warehouse.db`
+- При першому запуску автоматично створюється схема і заповнюється початковими даними (3 склади, 12 товарів)
+- Каскадне видалення: при видаленні складу автоматично видаляються всі його товари
 
 ---
 
 ## Початкові дані
 
-| Склад         | Місто   | Товарів |
-|---------------|---------|---------|
-| Центральний   | Київ    | 10      |
-| Західний      | Львів   | 2       |
-| Богуславський | Богуслав| 0       |
+| Склад         | Місто    | Товарів |
+|---------------|----------|---------|
+| Центральний   | Київ     | 10      |
+| Західний      | Львів    | 2       |
+| Богуславський | Богуслав | 0       |
 
 ---
 
 ## Запуск
 
-### WPF-застосунок (ЛР2)
 Відкрити `WarehouseManager.sln` → встановити `WarehouseManager.WpfApp` як стартовий проєкт → запустити (F5).
-
-### Консольний застосунок (ЛР1)
-Відкрити `WarehouseManager.sln` → встановити `WarehouseManager.ConsoleApp` як стартовий проєкт → запустити (F5).

@@ -2,10 +2,16 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:WarehouseManager.ViewModels;assembly=WarehouseManager.ViewModels"
-             xmlns:pages="clr-namespace:WarehouseManager.WpfApp.Pages">
-	<Application.Resources>
+             xmlns:pages="clr-namespace:WarehouseManager.WpfApp.Pages"
+             xmlns:conv="clr-namespace:WarehouseManager.WpfApp.Converters">
+    <Application.Resources>
 
-		<DataTemplate DataType="{x:Type vm:WarehousesViewModel}">
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <conv:LocationConverter x:Key="LocationConv"/>
+        <conv:CategoryConverter x:Key="CategoryConv"/>
+
+        <DataTemplate DataType="{x:Type vm:WarehousesViewModel}">
 			<pages:WarehouseListPage />
 		</DataTemplate>
 		<DataTemplate DataType="{x:Type vm:WarehouseDetailViewModel}">

@@ -1,12 +1,13 @@
-using System.Collections.Generic;
 using WarehouseManager.Models;
 
 namespace WarehouseManager.Repositories.Interfaces
 {
-    /// <summary>Інтерфейс репозиторію складів.</summary>
     public interface IWarehouseRepository
     {
-        IReadOnlyList<WarehouseModel> GetAll();
-        WarehouseModel? GetById(int id);
+        Task<List<WarehouseModel>> GetAllAsync();
+        Task<WarehouseModel?> GetByIdAsync(int id);
+        Task<WarehouseModel> AddAsync(WarehouseModel warehouse);
+        Task UpdateAsync(WarehouseModel warehouse);
+        Task DeleteAsync(int id);
     }
 }

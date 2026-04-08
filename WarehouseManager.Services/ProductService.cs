@@ -1,32 +1,32 @@
+using System;
+using System.Threading.Tasks;
 using WarehouseManager.Models;
+using WarehouseManager.Models.Enums;
 using WarehouseManager.Repositories.Interfaces;
 using WarehouseManager.Services.DTOs;
 using WarehouseManager.Services.Interfaces;
 
 namespace WarehouseManager.Services
 {
-    /// <summary>
-    /// Сервіс товарів. Конвертує DB Model у ProductDetailDto.
-    /// </summary>
     public class ProductService : IProductService
     {
-        private readonly IProductRepository _productRepository;
-        private readonly IWarehouseRepository _warehouseRepository;
+        private readonly IProductRepository _productRepo;
+        private readonly IWarehouseRepository _warehouseRepo;
 
         public ProductService(
-            IProductRepository productRepository,
-            IWarehouseRepository warehouseRepository)
+            IProductRepository productRepo,
+            IWarehouseRepository warehouseRepo)
         {
-            _productRepository = productRepository;
-            _warehouseRepository = warehouseRepository;
+            _productRepo = productRepo;
+            _warehouseRepo = warehouseRepo;
         }
 
-        public ProductDetailDto? GetProductDetail(int productId)
+        public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
         {
-            ProductModel? product = _productRepository.GetById(productId);
+            var product = await _productRepo.GetByIdAsync(productId);
             if (product is null) return null;
 
-            WarehouseModel? warehouse = _warehouseRepository.GetById(product.WarehouseId);
+            var warehouse = await _warehouseRepo.GetByIdAsync(product.WarehouseId);
 
             return new ProductDetailDto
             {
@@ -41,5 +41,43 @@ namespace WarehouseManager.Services
                 Description = product.Description
             };
         }
+
+        public async Task<ProductDetailDto> AddProductAsync(int warehouseId, string name,
+            int quantity, decimal unitPrice, ProductCategory category, string description)
+        {
+            var model = new ProductModel(warehouseId, name, quantity, unitPrice, category, description);
+            var created = await _productRepo.AddAsync(model);
+
+            var warehouse = await _warehouseRepo.GetByIdAsync(warehouseId);
+
+            return new ProductDetailDto
+            {
+                Id = created.Id,
+                WarehouseId = created.WarehouseId,
+                WarehouseName = warehouse?.Name ?? "—",
+                Name = created.Name,
+                Category = created.Category.ToString(),
+                Quantity = created.Quantity,
+                UnitPrice = created.UnitPrice,
+                TotalPrice = created.Quantity * created.UnitPrice,
+                Description = created.Description
+            };
+        }
+
+        public async Task UpdateProductAsync(int id, string name, int quantity,
+            decimal unitPrice, ProductCategory category, string description)
+        {
+            var product = await _productRepo.GetByIdAsync(id)
+                ?? throw new InvalidOperationException($"Товар з ID {id} не знайдено.");
+            product.Name = name;
+            product.Quantity = quantity;
+            product.UnitPrice = unitPrice;
+            product.Category = category;
+            product.Description = description;
+            await _productRepo.UpdateAsync(product);
+        }
+
+        public Task DeleteProductAsync(int id) =>
+            _productRepo.DeleteAsync(id);
     }
 }

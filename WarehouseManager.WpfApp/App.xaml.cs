@@ -1,5 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
+using System.IO;
 using System.Windows;
 using WarehouseManager.Repositories;
 using WarehouseManager.Repositories.Interfaces;
@@ -15,7 +16,7 @@ namespace WarehouseManager.WpfApp
     {
         public static IServiceProvider ServiceProvider { get; private set; } = null!;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -23,23 +24,35 @@ namespace WarehouseManager.WpfApp
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
 
+            // Ініціалізація БД: створення + заповнення при першому запуску
+            var context = ServiceProvider.GetRequiredService<AppDbContext>();
+            await DbInitializer.InitializeAsync(context);
+
             MainWindow mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             mainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
             mainWindow.Show();
 
-            // Стартова сторінка
             ServiceProvider.GetRequiredService<INavigationService>().GoToWarehouseList();
         }
 
         private static void ConfigureServices(ServiceCollection services)
         {
+            // БД
+            var dbPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WarehouseManager", "warehouse.db");
+            Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"));
+
             // Repositories
-            services.AddSingleton<IWarehouseRepository, WarehouseRepository>();
-            services.AddSingleton<IProductRepository, ProductRepository>();
+            services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
 
             // Services
-            services.AddSingleton<IWarehouseService, WarehouseService>();
-            services.AddSingleton<IProductService, ProductService>();
+            services.AddScoped<IWarehouseService, WarehouseService>();
+            services.AddScoped<IProductService, ProductService>();
 
             // ViewModels
             services.AddSingleton<MainViewModel>();
@@ -47,7 +60,7 @@ namespace WarehouseManager.WpfApp
             services.AddTransient<WarehouseDetailViewModel>();
             services.AddTransient<ProductDetailViewModel>();
 
-            // Navigation (Singleton бо зберігає MainViewModel)
+            // Navigation
             services.AddSingleton<INavigationService, NavigationService>();
 
             // Window

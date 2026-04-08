@@ -1,14 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using WarehouseManager.ViewModels;
 using WarehouseManager.ViewModels.Navigation;
 
 namespace WarehouseManager.WpfApp.Services
 {
-    /// <summary>
-    /// Реалізація навігації: змінює CurrentViewModel у MainViewModel,
-    /// ContentControl автоматично підбирає потрібний DataTemplate.
-    /// </summary>
     public class NavigationService : INavigationService
     {
         private readonly MainViewModel _mainViewModel;
@@ -22,23 +17,36 @@ namespace WarehouseManager.WpfApp.Services
 
         public void GoToWarehouseList()
         {
-            _mainViewModel.CurrentViewModel =
-                _serviceProvider.GetRequiredService<WarehousesViewModel>();
+            var vm = _serviceProvider.GetRequiredService<WarehousesViewModel>();
+            _mainViewModel.CurrentViewModel = vm;
+            _ = vm.LoadDataAsync();
         }
 
         public void GoToWarehouseDetail(int warehouseId)
         {
-            WarehouseDetailViewModel vm =
-                _serviceProvider.GetRequiredService<WarehouseDetailViewModel>();
-            vm.LoadData(warehouseId);
+            var vm = _serviceProvider.GetRequiredService<WarehouseDetailViewModel>();
+            _mainViewModel.CurrentViewModel = vm;
+            _ = vm.LoadDataAsync(warehouseId);
+        }
+
+        public void GoToNewWarehouse()
+        {
+            var vm = _serviceProvider.GetRequiredService<WarehouseDetailViewModel>();
+            vm.StartNewWarehouse();
             _mainViewModel.CurrentViewModel = vm;
         }
 
         public void GoToProductDetail(int productId)
         {
-            ProductDetailViewModel vm =
-                _serviceProvider.GetRequiredService<ProductDetailViewModel>();
-            vm.LoadData(productId);
+            var vm = _serviceProvider.GetRequiredService<ProductDetailViewModel>();
+            _mainViewModel.CurrentViewModel = vm;
+            _ = vm.LoadDataAsync(productId);
+        }
+
+        public void GoToNewProduct(int warehouseId)
+        {
+            var vm = _serviceProvider.GetRequiredService<ProductDetailViewModel>();
+            vm.StartNewProduct(warehouseId);
             _mainViewModel.CurrentViewModel = vm;
         }
     }

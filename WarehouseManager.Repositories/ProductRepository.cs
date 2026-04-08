@@ -1,18 +1,44 @@
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManager.Models;
 using WarehouseManager.Repositories.Interfaces;
-using WarehouseManager.Repositories.Storage;
 
 namespace WarehouseManager.Repositories
 {
-    /// <summary>Репозиторій для роботи з товарами через FakeStorage.</summary>
     public class ProductRepository : IProductRepository
     {
-        public IReadOnlyList<ProductModel> GetByWarehouseId(int warehouseId) =>
-            FakeStorage.Products.Where(p => p.WarehouseId == warehouseId).ToList();
+        private readonly AppDbContext _context;
 
-        public ProductModel? GetById(int id) =>
-            FakeStorage.Products.FirstOrDefault(p => p.Id == id);
+        public ProductRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<ProductModel?> GetByIdAsync(int id) =>
+            await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+        public async Task<ProductModel> AddAsync(ProductModel product)
+        {
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+            return product;
+        }
+
+        public async Task UpdateAsync(ProductModel product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product is not null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
